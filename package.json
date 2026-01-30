@@ -1,0 +1,67 @@
+{
+  "name": "my-jest-coverage-lens",
+  "displayName": "Jest Coverage CodeLens",
+  "version": "0.1.0",
+  "publisher": "tu-nombre",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "jestCoverageLens.run",
+        "title": "Run Jest Test"
+      },
+      {
+        "command": "jestCoverageLens.runCoverage",
+        "title": "Run Jest Test with Coverage"
+      },
+      {
+        "command": "jestCoverageLens.runCoverageOpen",
+        "title": "Run Jest Test with Coverage and Open Browser"
+      }
+    ],
+    "configuration": {
+      "title": "Jest Coverage CodeLens",
+      "properties": {
+        "jestCoverageLens.jestCommand": {
+          "type": "string",
+          "default": "pnpm jest",
+          "description": "Comando base para ejecutar Jest (ej: 'pnpm jest', 'npx jest', 'yarn jest')"
+        },
+        "jestCoverageLens.coverageDir": {
+          "type": "string",
+          "default": "coverage",
+          "description": "Directorio donde se genera el reporte de cobertura"
+        },
+        "jestCoverageLens.openCommand": {
+          "type": "string",
+          "default": "open",
+          "description": "Comando para abrir archivos en el navegador (open en macOS, xdg-open en Linux, start en Windows)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build",
+    "build": "tsc -p .",
+    "watch": "tsc -watch -p ."
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
+    "@types/node": "^25.1.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.26.0",
+    "@babel/traverse": "^7.26.0"
+  }
+}
