@@ -23,16 +23,27 @@ CodeLens appears above each `describe`, `it`, and `test` block with three option
 
 ## Installation
 
-You can install a local `.vsix`:
+### Quick Install
 
-download the vsix and open the terminal where the vsix is and run the one that correspond
-
-download the vsix and open the terminal where the vsix is and run the one that correspond
+**VSCodium:**
 
 ```bash
-code --install-extension jest-coverage-lens-0.1.0.vsix
-codium --install-extension jest-coverage-lens-0.1.0.vsix
+echo "📦 Downloading..." && curl -#L https://github.com/revione/jest-coverage-lens/raw/main/jest-coverage-lens-0.1.0.vsix -o /tmp/jcl.vsix && echo "⚙️  Installing..." && codium --install-extension /tmp/jcl.vsix > /dev/null 2>&1 && rm -f /tmp/jcl.vsix && echo "✅ Done! "
 ```
+
+**VSCode:**
+
+```bash
+echo "📦 Downloading..." && curl -#L https://github.com/revione/jest-coverage-lens/raw/main/jest-coverage-lens-0.1.0.vsix -o /tmp/jcl.vsix && echo "⚙️  Installing..." && code --install-extension /tmp/jcl.vsix > /dev/null 2>&1 && rm -f /tmp/jcl.vsix && echo "✅ Done! "
+```
+
+### Manual Install
+
+1. Download the [latest .vsix file](https://github.com/revione/jest-coverage-lens/raw/main/jest-coverage-lens-0.1.0.vsix)
+2. Open VSCode/VSCodium
+3. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS)
+4. Type "Install from VSIX"
+5. Select the downloaded file
 
 ## Configuration
 
