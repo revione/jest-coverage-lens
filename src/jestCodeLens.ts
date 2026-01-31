@@ -59,14 +59,14 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
               ]
             }),
             new vscode.CodeLens(range, {
-              title: "Run with coverage",
+              title: "Coverage",
               command: "jestCoverageLens.runCoverage",
               arguments: [
                 { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
               ]
             }),
             new vscode.CodeLens(range, {
-              title: "Run with coverage + open",
+              title: "Browser",
               command: "jestCoverageLens.runCoverageOpen",
               arguments: [
                 { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData

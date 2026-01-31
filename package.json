@@ -1,67 +1,142 @@
 {
-  "name": "my-jest-coverage-lens",
+  "name": "jest-coverage-lens",
   "displayName": "Jest Coverage CodeLens",
+  "description": "Run Jest tests and coverage from CodeLens.",
   "version": "0.1.0",
-  "publisher": "tu-nombre",
+  "publisher": "revione",
+  "author": {
+    "name": "revione"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/revione/jest-coverage-lens"
+  },
+  "bugs": {
+    "url": "https://github.com/revione/jest-coverage-lens/issues"
+  },
+  "homepage": "https://github.com/revione/jest-coverage-lens#readme",
+  "keywords": [
+    "jest",
+    "testing",
+    "coverage",
+    "codelens",
+    "test runner",
+    "unit testing",
+    "tdd",
+    "typescript",
+    "javascript"
+  ],
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.108.0",
+    "node": ">=18.0.0"
   },
   "categories": [
-    "Testing"
+    "Testing",
+    "Other"
   ],
   "activationEvents": [
-    "*"
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "jestCoverageLens.run",
-        "title": "Run Jest Test"
+        "title": "Run",
+        "category": "Jest Coverage"
       },
       {
         "command": "jestCoverageLens.runCoverage",
-        "title": "Run Jest Test with Coverage"
+        "title": "Coverage",
+        "category": "Jest Coverage"
       },
       {
         "command": "jestCoverageLens.runCoverageOpen",
-        "title": "Run Jest Test with Coverage and Open Browser"
+        "title": "Browser",
+        "category": "Jest Coverage"
       }
     ],
     "configuration": {
       "title": "Jest Coverage CodeLens",
       "properties": {
+        "jestCoverageLens.enableCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable CodeLens in test files",
+          "order": 0
+        },
         "jestCoverageLens.jestCommand": {
           "type": "string",
           "default": "pnpm jest",
-          "description": "Comando base para ejecutar Jest (ej: 'pnpm jest', 'npx jest', 'yarn jest')"
+          "description": "Base command to run Jest (e.g., 'pnpm jest', 'npx jest', 'yarn jest', 'npm test')",
+          "order": 1
         },
         "jestCoverageLens.coverageDir": {
           "type": "string",
           "default": "coverage",
-          "description": "Directorio donde se genera el reporte de cobertura"
+          "description": "Directory where coverage reports are generated",
+          "order": 2
         },
         "jestCoverageLens.openCommand": {
           "type": "string",
           "default": "open",
-          "description": "Comando para abrir archivos en el navegador (open en macOS, xdg-open en Linux, start en Windows)"
+          "description": "Command to open files in browser (open on macOS, xdg-open on Linux, start on Windows)",
+          "enum": [
+            "open",
+            "xdg-open",
+            "start"
+          ],
+          "order": 3
+        },
+        "jestCoverageLens.autoDetectJestCommand": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect the package manager (pnpm, yarn, npm) from the project",
+          "order": 4
         }
       }
     }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run build",
-    "build": "tsc -p .",
-    "watch": "tsc -watch -p ."
+    "build": "node esbuild.mjs --minify",
+    "compile": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "pretest": "pnpm run compile",
+    "test": "echo \"No tests configured yet\"",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/babel__traverse": "^7.28.0",
-    "@types/node": "^25.1.0",
-    "@types/vscode": "^1.85.0",
-    "typescript": "^5.4.0"
+    "@types/node": "^20.19.30",
+    "@types/vscode": "^1.108.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@babel/parser": "^7.26.0",
-    "@babel/traverse": "^7.26.0"
+    "@babel/parser": "^7.28.6",
+    "@babel/traverse": "^7.28.6"
   }
 }

@@ -1,7 +1,7 @@
 # Compiled output
 dist/
 out/
-*.vsix
+# *.vsix
 
 # Dependencies
 node_modules/
