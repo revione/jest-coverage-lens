@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
 import { JestCodeLensProvider, JestLensData } from "./jestCodeLens";
 
@@ -110,9 +112,6 @@ async function runJest(data: JestLensData, options: RunOptions) {
 }
 
 async function findSourceFile(specPath: string): Promise<string | null> {
-  const fs = require("fs");
-  const path = require("path");
-
   // Intenta quitar .spec/.test
   const directMatch = specPath.replace(/\.(spec|test)\.(tsx?|jsx?)$/, ".$2");
   if (fs.existsSync(directMatch)) {
