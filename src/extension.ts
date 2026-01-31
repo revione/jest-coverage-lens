@@ -114,8 +114,12 @@ async function runJest(data: JestLensData, options: RunOptions) {
 async function findSourceFile(specPath: string): Promise<string | null> {
   // Intenta quitar .spec/.test
   const directMatch = specPath.replace(/\.(spec|test)\.(tsx?|jsx?)$/, ".$2");
-  if (fs.existsSync(directMatch)) {
-    return directMatch;
+  try {
+    if (fs.existsSync(directMatch)) {
+      return directMatch;
+    }
+  } catch (error) {
+    console.error("Error checking file:", error);
   }
 
   // Busca en el mismo directorio
@@ -126,8 +130,12 @@ async function findSourceFile(specPath: string): Promise<string | null> {
   const extensions = [".tsx", ".ts", ".jsx", ".js"];
   for (const ext of extensions) {
     const candidate = path.join(dir, baseName + ext);
-    if (fs.existsSync(candidate)) {
-      return candidate;
+    try {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    } catch (error) {
+      console.error("Error checking file:", error);
     }
   }
 
