@@ -122,20 +122,32 @@ async function findSourceFile(specPath: string): Promise<string | null> {
     console.error("Error checking file:", error);
   }
 
-  // Busca en el mismo directorio
+  // Busca en el mismo directorio o quitando segment de __tests__
   const dir = path.dirname(specPath);
   const fileName = path.basename(specPath);
   const baseName = fileName.replace(/\.(spec|test)\.(tsx?|jsx?)$/, "");
 
   const extensions = [".tsx", ".ts", ".jsx", ".js"];
+  const candidateDirs = new Set<string>();
+  candidateDirs.add(dir);
+  const strippedDir = dir
+    .split(path.sep)
+    .filter((segment) => segment !== "__tests__")
+    .join(path.sep);
+  if (strippedDir && strippedDir !== dir) {
+    candidateDirs.add(strippedDir);
+  }
+
   for (const ext of extensions) {
-    const candidate = path.join(dir, baseName + ext);
-    try {
-      if (fs.existsSync(candidate)) {
-        return candidate;
+    for (const candidateDir of candidateDirs) {
+      const candidate = path.join(candidateDir, baseName + ext);
+      try {
+        if (fs.existsSync(candidate)) {
+          return candidate;
+        }
+      } catch (error) {
+        console.error("Error checking file:", error);
       }
-    } catch (error) {
-      console.error("Error checking file:", error);
     }
   }
 
