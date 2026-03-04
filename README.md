@@ -53,6 +53,7 @@ Configure the extension in your VSCode settings:
 {
   // Command to run Jest (default: "pnpm jest")
   "jestCoverageLens.jestCommand": "pnpm jest",
+  // For CRA projects you can use: "react-scripts test" (or "npm test")
 
   // Coverage output directory (default: "coverage")
   "jestCoverageLens.coverageDir": "coverage",

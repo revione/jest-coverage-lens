@@ -2,6 +2,10 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { JestCodeLensProvider, JestLensData } from "./jestCodeLens";
+import { buildJestCommand } from "./runners/jestRunner";
+import { buildReactScriptsCommand, isReactScriptsCommand } from "./runners/reactScriptsRunner";
+import { RunOptions } from "./runners/types";
+import { findProjectRoot } from "./utils/project";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("🚀 Jest Coverage CodeLens extension is now ACTIVE!");
@@ -44,18 +48,14 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-interface RunOptions {
-  coverage: boolean;
-  openBrowser: boolean;
-}
-
 async function runJest(data: JestLensData, options: RunOptions) {
+  const specFile = data.filePath;
+  const projectRoot = findProjectRoot(specFile);
   const cfg = vscode.workspace.getConfiguration("jestCoverageLens");
-  const baseCmd = cfg.get<string>("jestCommand", "pnpm jest");
+  const baseCmd = resolveBaseCommand(cfg, projectRoot);
   const coverageDir = cfg.get<string>("coverageDir", "coverage");
   const openCmd = cfg.get<string>("openCommand", "open");
 
-  const specFile = data.filePath;
   const pattern = data.fullNamePattern;
 
   // Obtener workspace root para hacer paths relativos
@@ -67,41 +67,47 @@ async function runJest(data: JestLensData, options: RunOptions) {
 
   const workspaceRoot = workspaceFolder.uri.fsPath;
 
-  // Convertir a path relativo
-  const relativeSpecFile = specFile.replace(workspaceRoot + "/", "");
+  const relativeSpecFile = path.relative(workspaceRoot, specFile);
+  const usesReactScripts = isReactScriptsCommand(baseCmd, projectRoot);
+  let effectiveOptions = options;
+  if (usesReactScripts && (options.coverage || options.openBrowser)) {
+    vscode.window.showInformationMessage(
+      "Coverage/Browser no está soportado de forma confiable en react-scripts. Ejecutando Run.",
+    );
+    effectiveOptions = { coverage: false, openBrowser: false };
+  }
 
-  let cmd = "";
-
-  if (!options.coverage) {
-    // Run (sin coverage)
-    cmd = `${baseCmd} ${relativeSpecFile} -t "${escapeQuotes(pattern)}" --coverage=false`;
-  } else if (options.coverage && !options.openBrowser) {
-    // Run with Coverage (sin abrir navegador)
+  let relativeSourceFile: string | null = null;
+  if (effectiveOptions.coverage) {
     const sourceFile = await findSourceFile(specFile);
-
     if (sourceFile) {
-      const relativeSourceFile = sourceFile.replace(workspaceRoot + "/", "");
-      cmd = `${baseCmd} ${relativeSpecFile} -t "${escapeQuotes(pattern)}" --coverage --collectCoverageFrom='${relativeSourceFile}'`;
+      relativeSourceFile = path.relative(workspaceRoot, sourceFile);
     } else {
       vscode.window.showWarningMessage(
         "No se encontró el archivo fuente. Se ejecutará sin coverage específico.",
       );
-      cmd = `${baseCmd} ${relativeSpecFile} -t "${escapeQuotes(pattern)}" --coverage`;
-    }
-  } else {
-    // Run with Coverage + open
-    const sourceFile = await findSourceFile(specFile);
-
-    if (sourceFile) {
-      const relativeSourceFile = sourceFile.replace(workspaceRoot + "/", "");
-      cmd = `${baseCmd} "${relativeSpecFile}" -t "${escapeQuotes(pattern)}" --coverage --collectCoverageFrom="${relativeSourceFile}" --coverageReporters=html && ${openCmd} ${coverageDir}/index.html`;
-    } else {
-      vscode.window.showWarningMessage(
-        "No se encontró el archivo fuente. Se ejecutará sin coverage específico.",
-      );
-      cmd = `${baseCmd} "${relativeSpecFile}" -t "${escapeQuotes(pattern)}" --coverage --coverageReporters=html && ${openCmd} ${coverageDir}/index.html`;
     }
   }
+
+  const cmd = usesReactScripts
+    ? buildReactScriptsCommand({
+        baseCmd,
+        relativeSpecFile,
+        pattern,
+        options: effectiveOptions,
+        relativeSourceFile,
+        coverageDir,
+        openCmd,
+      })
+    : buildJestCommand({
+        baseCmd,
+        relativeSpecFile,
+        pattern,
+        options: effectiveOptions,
+        relativeSourceFile,
+        coverageDir,
+        openCmd,
+      });
 
   // Debug log
   console.log("🚀 Comando Jest:", cmd);
@@ -159,8 +165,57 @@ function getOrCreateTerminal(name: string): vscode.Terminal {
   return existing ?? vscode.window.createTerminal({ name });
 }
 
-function escapeQuotes(s: string): string {
-  return s.replace(/"/g, '\\"');
-}
-
 export function deactivate() {}
+
+function resolveBaseCommand(
+  cfg: vscode.WorkspaceConfiguration,
+  projectRoot: string | null,
+): string {
+  const configuredCmd = cfg.get<string>("jestCommand", "pnpm jest").trim();
+  const autoDetect = cfg.get<boolean>("autoDetectJestCommand", true);
+
+  if (!autoDetect) {
+    return configuredCmd;
+  }
+
+  if (!projectRoot) {
+    return configuredCmd;
+  }
+
+  const pkgJsonPath = path.join(projectRoot, "package.json");
+  try {
+    if (!fs.existsSync(pkgJsonPath)) {
+      return configuredCmd;
+    }
+
+    const raw = fs.readFileSync(pkgJsonPath, "utf8");
+    const pkg = JSON.parse(raw) as { scripts?: { test?: string } };
+    const testScript = (pkg.scripts?.test ?? "").toLowerCase();
+
+    if (!testScript) {
+      return configuredCmd;
+    }
+
+    // Prefer package-manager test script for CRA/Jest projects so local binaries resolve correctly.
+    if (fs.existsSync(path.join(projectRoot, "pnpm-lock.yaml"))) {
+      return "pnpm test";
+    }
+    if (fs.existsSync(path.join(projectRoot, "yarn.lock"))) {
+      return "yarn test";
+    }
+    if (fs.existsSync(path.join(projectRoot, "package-lock.json"))) {
+      return "npm test";
+    }
+
+    if (testScript.includes("react-scripts test")) {
+      return "npm test";
+    }
+    if (testScript.includes("jest")) {
+      return "npm test";
+    }
+  } catch (error) {
+    console.error("Error auto-detecting test command:", error);
+  }
+
+  return configuredCmd;
+}

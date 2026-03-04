@@ -1,6 +1,9 @@
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
+import { findProjectRoot } from "./utils/project";
 
 export type JestLensData = {
   filePath: string;
@@ -15,6 +18,7 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
 
     const text = document.getText();
     const lenses: vscode.CodeLens[] = [];
+    const isReactScripts = isReactScriptsProject(document.fileName);
 
     let ast;
     try {
@@ -58,21 +62,28 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
                 { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
               ]
             }),
-            new vscode.CodeLens(range, {
-              title: "Coverage",
-              command: "jestCoverageLens.runCoverage",
-              arguments: [
-                { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
-              ]
-            }),
-            new vscode.CodeLens(range, {
-              title: "Browser",
-              command: "jestCoverageLens.runCoverageOpen",
-              arguments: [
-                { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
-              ]
-            })
           );
+
+          if (!isReactScripts) {
+            lenses.push(
+              new vscode.CodeLens(range, {
+                title: "Coverage",
+                command: "jestCoverageLens.runCoverage",
+                arguments: [
+                  { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
+                ]
+              }),
+            );
+            lenses.push(
+              new vscode.CodeLens(range, {
+                title: "Browser",
+                command: "jestCoverageLens.runCoverageOpen",
+                arguments: [
+                  { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
+                ]
+              }),
+            );
+          }
 
           if (fnName === "describe") {
             describeStack.push(name);
@@ -116,4 +127,19 @@ function getStringLiteralValue(node: any): string | null {
     return node.quasis[0]?.value?.cooked ?? null;
   }
   return null;
+}
+
+function isReactScriptsProject(startFilePath: string): boolean {
+  const projectRoot = findProjectRoot(startFilePath);
+  if (!projectRoot) return false;
+
+  const pkgJsonPath = path.join(projectRoot, "package.json");
+  try {
+    if (!fs.existsSync(pkgJsonPath)) return false;
+    const raw = fs.readFileSync(pkgJsonPath, "utf8");
+    const pkg = JSON.parse(raw) as { scripts?: { test?: string } };
+    return (pkg.scripts?.test ?? "").toLowerCase().includes("react-scripts test");
+  } catch {
+    return false;
+  }
 }
