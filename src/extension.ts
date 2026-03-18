@@ -7,6 +7,8 @@ import { buildReactScriptsCommand, isReactScriptsCommand } from "./runners/react
 import { RunOptions } from "./runners/types";
 import { detectPackageManager, findProjectRoot, PackageManager } from "./utils/project";
 
+const terminalsByCwd = new Map<string, vscode.Terminal>();
+
 export function activate(context: vscode.ExtensionContext) {
   console.log("🚀 Jest Coverage CodeLens extension is now ACTIVE!");
 
@@ -25,6 +27,16 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   console.log("✅ CodeLens provider registered!");
+
+  context.subscriptions.push(
+    vscode.window.onDidCloseTerminal((terminal) => {
+      for (const [cwd, knownTerminal] of terminalsByCwd.entries()) {
+        if (knownTerminal === terminal) {
+          terminalsByCwd.delete(cwd);
+        }
+      }
+    }),
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -51,6 +63,8 @@ export function activate(context: vscode.ExtensionContext) {
 async function runJest(data: JestLensData, options: RunOptions) {
   const specFile = data.filePath;
   const projectRoot = findProjectRoot(specFile);
+  const fileWorkspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(specFile));
+  const executionRoot = projectRoot ?? fileWorkspaceFolder?.uri.fsPath ?? null;
   const cfg = vscode.workspace.getConfiguration("jestCoverageLens");
   const baseCmd = resolveBaseCommand(cfg, projectRoot);
   const coverageDir = cfg.get<string>("coverageDir", "coverage");
@@ -58,16 +72,12 @@ async function runJest(data: JestLensData, options: RunOptions) {
 
   const pattern = data.fullNamePattern;
 
-  // Obtener workspace root para hacer paths relativos
-  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-  if (!workspaceFolder) {
-    vscode.window.showErrorMessage("No se encontró workspace folder");
+  if (!executionRoot) {
+    vscode.window.showErrorMessage("No se encontró el directorio del proyecto para ejecutar Jest");
     return;
   }
 
-  const workspaceRoot = workspaceFolder.uri.fsPath;
-
-  const relativeSpecFile = path.relative(workspaceRoot, specFile);
+  const relativeSpecFile = path.relative(executionRoot, specFile);
   const usesReactScripts = isReactScriptsCommand(baseCmd, projectRoot);
   let effectiveOptions = options;
   if (usesReactScripts && (options.coverage || options.openBrowser)) {
@@ -81,7 +91,7 @@ async function runJest(data: JestLensData, options: RunOptions) {
   if (effectiveOptions.coverage) {
     const sourceFile = await findSourceFile(specFile);
     if (sourceFile) {
-      relativeSourceFile = path.relative(workspaceRoot, sourceFile);
+      relativeSourceFile = path.relative(executionRoot, sourceFile);
     } else {
       vscode.window.showWarningMessage(
         "No se encontró el archivo fuente. Se ejecutará sin coverage específico.",
@@ -112,7 +122,7 @@ async function runJest(data: JestLensData, options: RunOptions) {
   // Debug log
   console.log("🚀 Comando Jest:", cmd);
 
-  const term = getOrCreateTerminal("Jest");
+  const term = getOrCreateTerminal(executionRoot);
   term.show(true);
   term.sendText(cmd, true);
 }
@@ -160,9 +170,18 @@ async function findSourceFile(specPath: string): Promise<string | null> {
   return null;
 }
 
-function getOrCreateTerminal(name: string): vscode.Terminal {
-  const existing = vscode.window.terminals.find((t) => t.name === name);
-  return existing ?? vscode.window.createTerminal({ name });
+function getOrCreateTerminal(cwd: string): vscode.Terminal {
+  const existing = terminalsByCwd.get(cwd);
+  if (existing) {
+    return existing;
+  }
+
+  const terminal = vscode.window.createTerminal({
+    name: `Jest: ${path.basename(cwd)}`,
+    cwd,
+  });
+  terminalsByCwd.set(cwd, terminal);
+  return terminal;
 }
 
 export function deactivate() {}
