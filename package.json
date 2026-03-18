@@ -115,7 +115,7 @@
     "test": "echo \"No tests configured yet\"",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
-    "package": "vsce package --no-dependencies",
+    "package": "node esbuild.mjs && vsce package --no-dependencies",
     "publish": "vsce publish",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",

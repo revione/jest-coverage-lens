@@ -23,7 +23,7 @@ function escapeQuotes(s: string): string {
 
 function commandNeedsArgForwarding(baseCmd: string): boolean {
   const normalized = baseCmd.trim().replace(/\s+/g, " ");
-  return /^(npm|pnpm)\s+(run\s+)?test(\s|$)/.test(normalized);
+  return /^(npm|pnpm)\s+(run\s+)?test(\s|$)/.test(normalized) || /^npm\s+exec(\s|$)/.test(normalized);
 }
 
 export { buildCommand, escapeQuotes, quoteArg };

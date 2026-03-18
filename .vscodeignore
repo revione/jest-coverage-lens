@@ -1,0 +1,7 @@
+.gitignore
+.vscode/**
+src/**
+esbuild.mjs
+tsconfig.json
+pnpm-lock.yaml
+*.vsix

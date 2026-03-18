@@ -45,6 +45,21 @@ echo "📦 Downloading..." && curl -#L https://github.com/revione/jest-coverage-
 4. Type "Install from VSIX"
 5. Select the downloaded file
 
+## Generate VSIX
+
+To generate a local `.vsix` package for installation or distribution:
+
+```bash
+pnpm install
+pnpm package
+```
+
+The generated file will be created in the project root with a name like:
+
+```bash
+jest-coverage-lens-0.1.0.vsix
+```
+
 ## Configuration
 
 Configure the extension in your VSCode settings:

@@ -5,7 +5,7 @@ import { JestCodeLensProvider, JestLensData } from "./jestCodeLens";
 import { buildJestCommand } from "./runners/jestRunner";
 import { buildReactScriptsCommand, isReactScriptsCommand } from "./runners/reactScriptsRunner";
 import { RunOptions } from "./runners/types";
-import { findProjectRoot } from "./utils/project";
+import { detectPackageManager, findProjectRoot, PackageManager } from "./utils/project";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("🚀 Jest Coverage CodeLens extension is now ACTIVE!");
@@ -191,31 +191,43 @@ function resolveBaseCommand(
     const raw = fs.readFileSync(pkgJsonPath, "utf8");
     const pkg = JSON.parse(raw) as { scripts?: { test?: string } };
     const testScript = (pkg.scripts?.test ?? "").toLowerCase();
+    const packageManager = detectPackageManager(projectRoot);
 
     if (!testScript) {
-      return configuredCmd;
-    }
-
-    // Prefer package-manager test script for CRA/Jest projects so local binaries resolve correctly.
-    if (fs.existsSync(path.join(projectRoot, "pnpm-lock.yaml"))) {
-      return "pnpm test";
-    }
-    if (fs.existsSync(path.join(projectRoot, "yarn.lock"))) {
-      return "yarn test";
-    }
-    if (fs.existsSync(path.join(projectRoot, "package-lock.json"))) {
-      return "npm test";
+      return packageManager ? getDirectJestCommand(packageManager) : configuredCmd;
     }
 
     if (testScript.includes("react-scripts test")) {
-      return "npm test";
+      return packageManager ? getScriptTestCommand(packageManager) : "npm test";
     }
     if (testScript.includes("jest")) {
-      return "npm test";
+      return packageManager ? getScriptTestCommand(packageManager) : "npm test";
     }
   } catch (error) {
     console.error("Error auto-detecting test command:", error);
   }
 
   return configuredCmd;
+}
+
+function getScriptTestCommand(packageManager: PackageManager): string {
+  switch (packageManager) {
+    case "pnpm":
+      return "pnpm test";
+    case "yarn":
+      return "yarn test";
+    case "npm":
+      return "npm test";
+  }
+}
+
+function getDirectJestCommand(packageManager: PackageManager): string {
+  switch (packageManager) {
+    case "pnpm":
+      return "pnpm jest";
+    case "yarn":
+      return "yarn jest";
+    case "npm":
+      return "npm exec jest";
+  }
 }
