@@ -7,7 +7,7 @@ export function buildReactScriptsCommand(input: RunnerBuildInput): string {
   const reactScriptsBaseCmd = toReactScriptsBaseCmd(input.baseCmd);
   const runArgs = [
     input.relativeSpecFile,
-    "-t",
+    "--testNamePattern",
     escapeQuotes(input.pattern),
     "--ci",
     "--coverage=false",
@@ -17,7 +17,10 @@ export function buildReactScriptsCommand(input: RunnerBuildInput): string {
   return buildCommand(reactScriptsBaseCmd, runArgs);
 }
 
-export function isReactScriptsCommand(baseCmd: string, projectRoot: string | null): boolean {
+export function isReactScriptsCommand(
+  baseCmd: string,
+  projectRoot: string | null,
+): boolean {
   const normalized = baseCmd.toLowerCase();
   if (normalized.includes("react-scripts") && normalized.includes("test")) {
     return true;
@@ -34,9 +37,14 @@ export function isReactScriptsCommand(baseCmd: string, projectRoot: string | nul
     }
     const raw = fs.readFileSync(pkgJsonPath, "utf8");
     const pkg = JSON.parse(raw) as { scripts?: { test?: string } };
-    return (pkg.scripts?.test ?? "").toLowerCase().includes("react-scripts test");
+    return (pkg.scripts?.test ?? "")
+      .toLowerCase()
+      .includes("react-scripts test");
   } catch (error) {
-    console.error("Error reading package.json for react-scripts detection:", error);
+    console.error(
+      "Error reading package.json for react-scripts detection:",
+      error,
+    );
     return false;
   }
 }

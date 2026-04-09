@@ -25,7 +25,7 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
       ast = parse(text, {
         sourceType: "module",
         plugins: ["typescript", "jsx", "importMeta", "topLevelAwait"],
-        errorRecovery: true
+        errorRecovery: true,
       });
     } catch {
       return [];
@@ -49,18 +49,21 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
 
           const range = new vscode.Range(
             new vscode.Position(loc.start.line - 1, loc.start.column),
-            new vscode.Position(loc.start.line - 1, loc.start.column)
+            new vscode.Position(loc.start.line - 1, loc.start.column),
           );
 
-          const full = [...describeStack, name].join(" ");
+          const full = name;
 
           lenses.push(
             new vscode.CodeLens(range, {
               title: "Run",
               command: "jestCoverageLens.run",
               arguments: [
-                { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
-              ]
+                {
+                  filePath: document.fileName,
+                  fullNamePattern: full,
+                } satisfies JestLensData,
+              ],
             }),
           );
 
@@ -70,8 +73,11 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
                 title: "Coverage",
                 command: "jestCoverageLens.runCoverage",
                 arguments: [
-                  { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
-                ]
+                  {
+                    filePath: document.fileName,
+                    fullNamePattern: full,
+                  } satisfies JestLensData,
+                ],
               }),
             );
             lenses.push(
@@ -79,8 +85,11 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
                 title: "Browser",
                 command: "jestCoverageLens.runCoverageOpen",
                 arguments: [
-                  { filePath: document.fileName, fullNamePattern: full } satisfies JestLensData
-                ]
+                  {
+                    filePath: document.fileName,
+                    fullNamePattern: full,
+                  } satisfies JestLensData,
+                ],
               }),
             );
           }
@@ -99,8 +108,8 @@ export class JestCodeLensProvider implements vscode.CodeLensProvider {
           if (!name) return;
 
           describeStack.pop();
-        }
-      }
+        },
+      },
     });
 
     return lenses;
@@ -114,7 +123,10 @@ function isSpecFile(filePath: string): boolean {
 function getCalleeName(callee: any): string | null {
   if (callee?.type === "Identifier") return callee.name;
 
-  if (callee?.type === "MemberExpression" && callee.object?.type === "Identifier") {
+  if (
+    callee?.type === "MemberExpression" &&
+    callee.object?.type === "Identifier"
+  ) {
     return callee.object.name;
   }
   return null;
@@ -138,7 +150,9 @@ function isReactScriptsProject(startFilePath: string): boolean {
     if (!fs.existsSync(pkgJsonPath)) return false;
     const raw = fs.readFileSync(pkgJsonPath, "utf8");
     const pkg = JSON.parse(raw) as { scripts?: { test?: string } };
-    return (pkg.scripts?.test ?? "").toLowerCase().includes("react-scripts test");
+    return (pkg.scripts?.test ?? "")
+      .toLowerCase()
+      .includes("react-scripts test");
   } catch {
     return false;
   }

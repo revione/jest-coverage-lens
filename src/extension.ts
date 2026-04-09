@@ -3,9 +3,16 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { JestCodeLensProvider, JestLensData } from "./jestCodeLens";
 import { buildJestCommand } from "./runners/jestRunner";
-import { buildReactScriptsCommand, isReactScriptsCommand } from "./runners/reactScriptsRunner";
+import {
+  buildReactScriptsCommand,
+  isReactScriptsCommand,
+} from "./runners/reactScriptsRunner";
 import { RunOptions } from "./runners/types";
-import { detectPackageManager, findProjectRoot, PackageManager } from "./utils/project";
+import {
+  detectPackageManager,
+  findProjectRoot,
+  PackageManager,
+} from "./utils/project";
 
 const terminalsByCwd = new Map<string, vscode.Terminal>();
 
@@ -63,7 +70,9 @@ export function activate(context: vscode.ExtensionContext) {
 async function runJest(data: JestLensData, options: RunOptions) {
   const specFile = data.filePath;
   const projectRoot = findProjectRoot(specFile);
-  const fileWorkspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(specFile));
+  const fileWorkspaceFolder = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(specFile),
+  );
   const executionRoot = projectRoot ?? fileWorkspaceFolder?.uri.fsPath ?? null;
   const cfg = vscode.workspace.getConfiguration("jestCoverageLens");
   const baseCmd = resolveBaseCommand(cfg, projectRoot);
@@ -73,7 +82,9 @@ async function runJest(data: JestLensData, options: RunOptions) {
   const pattern = data.fullNamePattern;
 
   if (!executionRoot) {
-    vscode.window.showErrorMessage("No se encontró el directorio del proyecto para ejecutar Jest");
+    vscode.window.showErrorMessage(
+      "No se encontró el directorio del proyecto para ejecutar Jest",
+    );
     return;
   }
 
@@ -127,7 +138,7 @@ async function runJest(data: JestLensData, options: RunOptions) {
   term.sendText(cmd, true);
 }
 
-async function findSourceFile(specPath: string): Promise<string | null> {
+async function findSourceFile(specPath: string) {
   // Intenta quitar .spec/.test
   const directMatch = specPath.replace(/\.(spec|test)\.(tsx?|jsx?)$/, ".$2");
   try {
@@ -170,7 +181,7 @@ async function findSourceFile(specPath: string): Promise<string | null> {
   return null;
 }
 
-function getOrCreateTerminal(cwd: string): vscode.Terminal {
+function getOrCreateTerminal(cwd: string) {
   const existing = terminalsByCwd.get(cwd);
   if (existing) {
     return existing;
@@ -189,7 +200,7 @@ export function deactivate() {}
 function resolveBaseCommand(
   cfg: vscode.WorkspaceConfiguration,
   projectRoot: string | null,
-): string {
+) {
   const configuredCmd = cfg.get<string>("jestCommand", "pnpm jest").trim();
   const autoDetect = cfg.get<boolean>("autoDetectJestCommand", true);
 
@@ -213,14 +224,20 @@ function resolveBaseCommand(
     const packageManager = detectPackageManager(projectRoot);
 
     if (!testScript) {
-      return packageManager ? getDirectJestCommand(packageManager) : configuredCmd;
+      return packageManager
+        ? getDirectJestCommand(packageManager)
+        : configuredCmd;
     }
 
     if (testScript.includes("react-scripts test")) {
-      return packageManager ? getScriptTestCommand(packageManager) : "npm test";
+      return packageManager
+        ? getDirectReactScriptsCommand(packageManager)
+        : "npx react-scripts test";
     }
     if (testScript.includes("jest")) {
-      return packageManager ? getScriptTestCommand(packageManager) : "npm test";
+      return packageManager
+        ? getDirectJestCommand(packageManager)
+        : "npx jest";
     }
   } catch (error) {
     console.error("Error auto-detecting test command:", error);
@@ -229,18 +246,18 @@ function resolveBaseCommand(
   return configuredCmd;
 }
 
-function getScriptTestCommand(packageManager: PackageManager): string {
+function getDirectReactScriptsCommand(packageManager: PackageManager) {
   switch (packageManager) {
     case "pnpm":
-      return "pnpm test";
+      return "pnpm exec react-scripts test";
     case "yarn":
-      return "yarn test";
+      return "yarn react-scripts test";
     case "npm":
-      return "npm test";
+      return "npm exec react-scripts test";
   }
 }
 
-function getDirectJestCommand(packageManager: PackageManager): string {
+function getDirectJestCommand(packageManager: PackageManager) {
   switch (packageManager) {
     case "pnpm":
       return "pnpm jest";

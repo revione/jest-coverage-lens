@@ -3,8 +3,8 @@ import { buildCommand, escapeQuotes, quoteArg } from "./commandUtils";
 import { RunnerBuildInput } from "./types";
 
 export function buildJestCommand(input: RunnerBuildInput): string {
-  const runArgs = [input.relativeSpecFile, "-t", escapeQuotes(input.pattern), "--coverage=false"];
-  const coverageArgs = [input.relativeSpecFile, "-t", escapeQuotes(input.pattern), "--coverage"];
+  const runArgs = [input.relativeSpecFile, "--testNamePattern", escapeQuotes(input.pattern), "--coverage=false"];
+  const coverageArgs = [input.relativeSpecFile, "--testNamePattern", escapeQuotes(input.pattern), "--coverage"];
 
   if (!input.options.coverage) {
     return buildCommand(input.baseCmd, runArgs);

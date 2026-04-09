@@ -19,6 +19,8 @@ CodeLens appears above each `describe`, `it`, and `test` block with three option
 2. **Coverage** - Execute the test and generate a coverage report
 3. **Browser** - Execute the test, generate coverage, and open the HTML report in your browser
 
+For `react-scripts` projects, only **Run** is shown. `Coverage` and `Browser` are intentionally hidden because that flow is not reliable there with the current implementation.
+
 ![Demo](https://raw.githubusercontent.com/revione/jest-coverage-lens/main/demo.gif)
 
 ## Installation
@@ -51,7 +53,7 @@ To generate a local `.vsix` package for installation or distribution:
 
 ```bash
 pnpm install
-pnpm package
+pnpm run package
 ```
 
 The generated file will be created in the project root with a name like:
@@ -68,7 +70,8 @@ Configure the extension in your VSCode settings:
 {
   // Command to run Jest (default: "pnpm jest")
   "jestCoverageLens.jestCommand": "pnpm jest",
-  // For CRA projects you can use: "react-scripts test" (or "npm test")
+  // For custom setups you can also use commands like:
+  // "npm exec jest" or "pnpm exec react-scripts test"
 
   // Coverage output directory (default: "coverage")
   "jestCoverageLens.coverageDir": "coverage",
@@ -84,6 +87,8 @@ Configure the extension in your VSCode settings:
   "jestCoverageLens.autoDetectJestCommand": true
 }
 ```
+
+When auto-detect is enabled, the extension prefers direct runner commands such as `pnpm jest`, `npm exec jest`, or `pnpm exec react-scripts test` instead of going through `npm test` / `pnpm test`.
 
 ## Requirements
 
